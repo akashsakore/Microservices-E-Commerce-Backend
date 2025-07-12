@@ -1,122 +1,109 @@
-🛒 Project Overview: Microservices E-Commerce Backend
-✅ Use Case:
-Build a microservices architecture with Flask services:
-    • product-service: Manages product catalog
-    • order-service: Handles customer orders
-    • user-service: Manages user info
-    • Optional: payment-service, cart-service, etc.
-🧱 Architecture Diagram
+# Microservices-based E-Commerce Backend on AWS (Flask + ECS Fargate + ALB)
 
-[ GitHub ] --> [ CodePipeline ]
-                    |
-                [ CodeBuild ]
-            (Build & Test Flask Services)
-                    |
-              [ Docker Images ]
-                    |
-               [ Amazon ECR ]
-                    |
-          [ ECS Fargate (per service) ]
-                    |
-        [ Application Load Balancer ]
+This project demonstrates how to build, containerize, and deploy a microservices-based e-commerce backend using **Flask**, **Docker**, and **AWS services** including **ECR, ECS (Fargate), CodeBuild**, and **Application Load Balancer (ALB)**.
 
-📁 Project Structure
+Each service — Product, User, and Order — is built and deployed independently with its own container, and traffic is routed via ALB to appropriate endpoints.
 
-ecommerce-backend/
-│
-├── user-service/
-│   ├── app.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
+---
+
+## Project Structure
+```
+
 ├── product-service/
-│   ├── app.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
+│ ├── app.py
+│ └── Dockerfile
+├── user-service/
+│ ├── app.py
+│ └── Dockerfile
 ├── order-service/
-│   ├── app.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
+│ ├── app.py
+│ └── Dockerfile
 ├── buildspec.yml
-└── docker-compose.yaml (for local testing)
+└── README.md
+```
 
-🚀 Step-by-Step Plan
-✅ Step 1: Set up Flask Microservices
-    • Each service has its own app.py, requirements.txt, and Dockerfile
-    • Use REST APIs: GET /products, POST /orders, etc.
+Each service has its own:
+- Flask API (`app.py`)
+- Dockerfile
+- Endpoint (e.g., `/users`, `/products`, `/orders`)
 
-✅ Step 2: Push Code to GitHub
-    • Create a single repo with all microservices in subfolders
-    • Add .gitignore, README.md, and CI config files
+---
 
-✅ Step 3: Create ECR Repositories
-    • One ECR repo per service
-bash
-CopyEdit
-aws ecr create-repository --repository-name product-service
-aws ecr create-repository --repository-name order-service
-aws ecr create-repository --repository-name user-service
+## Technologies Used
 
-✅ Step 4: Write buildspec.yml
-    • Handles Docker build, tag, push to ECR
-yaml
-CopyEdit
-version: 0.2
+- **Flask** (Python Microservice Framework)
+- **Docker** (Containerization)
+- **AWS ECR** (Elastic Container Registry)
+- **AWS CodeBuild** (CI)
+- **AWS ECS with Fargate** (Container Orchestration)
+- **ALB (Application Load Balancer)** (Routing traffic)
+- **CloudWatch** (Logging and Monitoring)
 
-phases:
-  pre_build:
-    commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-  build:
-    commands:
-      - echo Building Docker images...
-      - docker build -t product-service ./product-service
-      - docker tag product-service:latest $ECR_PRODUCT
-      - docker build -t order-service ./order-service
-      - docker tag order-service:latest $ECR_ORDER
-      - docker build -t user-service ./user-service
-      - docker tag user-service:latest $ECR_USER
-  post_build:
-    commands:
-      - echo Pushing images to ECR...
-      - docker push $ECR_PRODUCT
-      - docker push $ECR_ORDER
-      - docker push $ECR_USER
-Replace $ECR_* with your actual repo URIs via CodeBuild environment variables.
+---
 
-✅ Step 5: Configure CodeBuild
-    • Create a CodeBuild project
-    • Attach necessary IAM roles to access ECR
-    • Use buildspec.yml from the repo
+## Setup Instructions
 
-✅ Step 6: Create CodePipeline
-    • Source: GitHub
-    • Build: CodeBuild project above
-    • Deploy: Manual or automatic to ECS (next step)
+### 1. Clone the Repository
+```
+git clone <git url>
+cd Microservices-E-Commerce-Backend
+```
+2. Create Flask Microservices
+Each service has an app.py
+3. Dockerize the Services
+Each service has its own Dockerfile:
+4. Create ECR Repositories
+    - product-service
+    - user-service
+    - order-service
+Use AWS Console or CLI.
 
-✅ Step 7: Set Up ECS Fargate (one service = one task)
-    • Create ECS Cluster
-    • For each service:
-        ◦ Define Task Definition (with Docker image from ECR)
-        ◦ Define Service (with ALB routing)
-    • Example routes:
-        ◦ /users/* → user-service
-        ◦ /products/* → product-service
+5. Set Up AWS CodeBuild
+    - refere the buildspec.yml in source code.
 
-✅ Step 8: Add Application Load Balancer
-    • ALB listens on port 80/443
-    • Target groups route traffic to appropriate containers
+7. Deploy on ECS Fargate
+- For each service:
+    - Create a Task Definition
+    - Set container port (5000/5001/5002)
+    - Set memory/CPU as needed
+    - Create an ECS Service using Fargate and connect to the ALB
 
-✅ Step 9: Add CI/CD Triggers
-    • Auto-trigger builds/deployments on GitHub push
+7. Configure ALB (Application Load Balancer)
+    - Create an ALB with a listener on port 80
+    - Create Target Groups for each service
 
-✅ Step 10: Optional Enhancements
-    • Add:
-        ◦ CloudWatch logging
-        ◦ RDS database for services
-        ◦ Monitoring with CloudWatch/Prometheus/Grafana
-        ◦ SQS/SNS for async events
+Set routing rules:
+```
+Path	Target Group
+/users/*	tg-user
+/products/*	tg-product
+/orders/*	tg-order
+```
 
+Health checks should point to correct route /users, /products, etc.
+
+Test Endpoints
+Once deployed, access:
+
+- http://ecommerce-alb-793475105.us-east-1.elb.amazonaws.com/users
+- http://ecommerce-alb-793475105.us-east-1.elb.amazonaws.com/product
+- http://ecommerce-alb-793475105.us-east-1.elb.amazonaws.com/order
+
+
+Each should return a JSON response like:
+
+{ "message": "Welcome to Product Service!" }
+
+Common Issues & Fixes
+```
+| Issue                       | Fix                                                             |
+| --------------------------- | --------------------------------------------------------------- |
+| ECS service fails to deploy | Flask may not bind to `0.0.0.0`                                 |
+| ALB health check fails      | Check target group path, port, and Flask route                  |
+| Docker builds fail          | Ensure `buildspec.yml` is in root and Dockerfiles are valid     |
+| ALB URL not accessible      | Check security groups and SG rules between ALB and ECS services |
+```
+Acknowledgements
+Built as a hands-on project to practice real-world AWS DevOps deployment of microservices. Special thanks to the AWS docs and Flask community.
+
+<img width="1837" height="933" alt="Screenshot from 2025-07-12 17-52-34" src="https://github.com/user-attachments/assets/cf38f58f-66e9-4bc3-a56d-20118ec25b7a" />
