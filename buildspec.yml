@@ -1,0 +1,33 @@
+version: 0.2
+
+env:
+  variables:
+    REGION: us-east-1
+    PRODUCT_REPO: 235494785010.dkr.ecr.us-east-1.amazonaws.com/product-service 
+    USER_REPO: 235494785010.dkr.ecr.us-east-1.amazonaws.com/user-service
+    ORDER_REPO: 235494785010.dkr.ecr.us-east-1.amazonaws.com/order-service
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to AWS ECR
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $PRODUCT_REPO
+
+  build:
+    commands:
+      - echo Building and tagging images
+      - docker build -t product-service ./product-service
+      - docker tag product-service:latest $PRODUCT_REPO:latest
+
+      - docker build -t user-service ./user-service
+      - docker tag user-service:latest $USER_REPO:latest
+
+      - docker build -t order-service ./order-service
+      - docker tag order-service:latest $ORDER_REPO:latest
+
+  post_build:
+    commands:
+      - echo Pushing Docker images
+      - docker push $PRODUCT_REPO:latest
+      - docker push $USER_REPO:latest
+      - docker push $ORDER_REPO:latest
